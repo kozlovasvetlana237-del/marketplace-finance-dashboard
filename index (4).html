@@ -1,0 +1,927 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Система управления ростом на маркетплейсах — демо-кейс</title>
+<style>
+:root{
+  --bg:#0b0d10; --panel:#12161b; --panel2:#171c22; --line:#26303a; --text:#f3f5f7;
+  --muted:#9aa6b2; --accent:#ff7a1a; --good:#36c98f; --warn:#f1b84b; --bad:#ef6461;
+  --radius:16px;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:Inter,Arial,sans-serif;background:var(--bg);color:var(--text)}
+button,select{font:inherit}
+.header{
+  position:sticky;top:0;z-index:20;background:rgba(11,13,16,.95);backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--line);padding:16px 22px;
+}
+.header-top{display:flex;justify-content:space-between;gap:16px;align-items:center;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:12px}
+.logo{width:38px;height:38px;border-radius:10px;background:var(--accent);display:grid;place-items:center;color:#111;font-weight:900}
+.brand h1{font-size:18px;margin:0}
+.brand small{display:block;color:var(--muted);margin-top:3px}
+.filters{display:flex;gap:10px;flex-wrap:wrap}
+select{background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:10px;padding:9px 12px;outline:none}
+.demo-badge{border:1px solid #5a402c;background:#24180f;color:#ffb477;padding:7px 10px;border-radius:999px;font-size:12px}
+.nav{display:flex;gap:8px;overflow:visible;padding-top:14px;flex-wrap:wrap}
+.nav button{
+  white-space:nowrap;border:1px solid transparent;background:transparent;color:var(--muted);
+  padding:9px 12px;border-radius:10px;cursor:pointer
+}
+.nav button.active{background:var(--panel2);color:var(--text);border-color:var(--line)}
+.main{padding:22px;max-width:1600px;margin:0 auto}
+.grid{display:grid;gap:14px}
+.kpis{grid-template-columns:repeat(8,minmax(140px,1fr))}
+.kpis-4{grid-template-columns:repeat(4,minmax(180px,1fr))}
+.card.kpi{display:grid;grid-template-rows:32px 1fr auto;min-height:164px}
+.card.kpi .value{display:flex;align-items:center;min-width:0;overflow:hidden;text-overflow:clip}
+tbody tr:last-child td{border-bottom:0}
+tbody tr:hover td{background:rgba(255,255,255,.015)}
+th:first-child, td:first-child{padding-left:14px}
+th:last-child, td:last-child{padding-right:14px}
+.section-title{margin-bottom:14px}
+.section-title h2{font-size:15px}
+
+.card{background:var(--panel);border:1px solid rgba(38,48,58,.9);border-radius:var(--radius);padding:16px;display:flex;flex-direction:column;height:100%}
+.kpi .label{color:var(--muted);font-size:12px;line-height:1.35;min-height:32px;display:flex;align-items:flex-start}
+.kpi .value{font-size:clamp(18px,2vw,24px);font-weight:800;margin:8px 0 6px;white-space:nowrap;line-height:1.1;align-self:flex-start}
+.delta{font-size:12px;line-height:1.35;margin-top:auto}
+.good{color:var(--good)} .warn{color:var(--warn)} .bad{color:var(--bad)}
+.row2{grid-template-columns:1.7fr 1fr;margin-top:14px}
+.row3{grid-template-columns:1.2fr 1fr 1fr;margin-top:14px}
+.section-title{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:12px}
+.section-title h2{font-size:16px;margin:0}
+.section-title span{color:var(--muted);font-size:12px}
+.chart{height:260px;display:flex;align-items:flex-end;gap:10px;padding-top:16px}
+.bar-wrap{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;height:100%}
+.bar{width:70%;border-radius:7px 7px 2px 2px;background:linear-gradient(180deg,#ff944d,#ff6b00)}
+.bar-label{font-size:11px;color:var(--muted);margin-top:8px}
+.legend{display:flex;gap:14px;color:var(--muted);font-size:12px;flex-wrap:wrap}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;background:var(--accent)}
+.signal{display:flex;gap:12px;padding:12px 0;border-bottom:1px solid rgba(38,48,58,.55);align-items:flex-start}
+.signal:last-child{border-bottom:0}
+.icon{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;background:#211912;color:#ff9d57;flex:0 0 auto}
+.signal b{font-size:13px}
+.signal p{margin:4px 0 0;color:var(--muted);font-size:12px;line-height:1.45}
+.table-wrap{overflow:auto;border-radius:12px}
+table{width:100%;border-collapse:separate;border-spacing:0;font-size:12px}
+th,td{padding:12px 12px;border-bottom:1px solid rgba(38,48,58,.55);text-align:right;white-space:nowrap;vertical-align:middle}
+th:first-child,td:first-child{text-align:left}
+th{color:var(--muted);font-weight:600;font-size:11px;letter-spacing:.02em;text-transform:none}
+.pill{padding:4px 8px;border-radius:999px;font-size:11px;border:1px solid rgba(38,48,58,.8)}
+.pill.good{background:#10251d}
+.pill.bad{background:#2a1515}
+.pill.warn{background:#2a2111}
+.progress{height:8px;background:#20262d;border-radius:999px;overflow:hidden}
+.progress > span{display:block;height:100%;background:var(--accent)}
+.tab{display:none}
+.tab.active{display:block}
+.metric-list{display:grid;gap:10px}
+.metric-line{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;padding:11px 0;border-bottom:1px solid rgba(38,48,58,.55)}
+.metric-line:last-child{border-bottom:0}
+.metric-line span{color:var(--muted);font-size:12px}
+.metric-line b{font-size:13px}
+.arch{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;align-items:stretch}
+.arch-step{background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:16px;position:relative}
+.arch-step:not(:last-child)::after{content:"→";position:absolute;right:-18px;top:50%;color:var(--accent);font-size:22px}
+.arch-step h3{font-size:14px;margin:0 0 8px}
+.arch-step p{font-size:12px;color:var(--muted);line-height:1.45;margin:0}
+.case-box{background:linear-gradient(180deg,#151a20,#101317);border:1px solid var(--line);border-radius:18px;padding:20px}
+.case-box h2{margin:0 0 10px;font-size:20px}
+.case-box p{color:var(--muted);line-height:1.55;font-size:13px}
+.case-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:14px}
+.case-point{background:#12171d;border:1px solid var(--line);border-radius:12px;padding:14px}
+.case-point b{display:block;font-size:13px;margin-bottom:6px}
+.case-point span{font-size:12px;color:var(--muted)}
+.footer-note{color:var(--muted);font-size:11px;margin-top:18px;line-height:1.5}
+.soft{color:var(--muted)}
+
+.owner-grid{display:grid;grid-template-columns:1.15fr 1fr;gap:14px}
+.big-number{font-size:42px;font-weight:900;line-height:1}
+.big-caption{font-size:12px;color:var(--muted);margin-top:8px}
+.decision-card{border-left:3px solid var(--accent)}
+.decision-card h3{font-size:14px;margin:0 0 8px}
+.decision-card p{font-size:12px;color:var(--muted);line-height:1.5;margin:0}
+.target-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.target-step{background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:15px;min-height:126px;display:flex;flex-direction:column;justify-content:space-between;overflow:hidden}
+.target-step .k{font-size:11px;color:var(--muted)}
+.target-step .v{font-size:clamp(18px,1.8vw,22px);font-weight:800;margin:6px 0;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:clip}
+.waterfall{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;align-items:end;height:260px;padding-top:18px}
+.wf-col{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%}
+.wf-bar{width:74%;border-radius:8px 8px 2px 2px;background:linear-gradient(180deg,#ff944d,#ff6b00)}
+.wf-bar.alt{background:linear-gradient(180deg,#4d5966,#2b333b)}
+.wf-label{font-size:11px;color:var(--muted);margin-top:8px;text-align:center}
+.logic-flow{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.logic-node{background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:14px}
+.logic-node b{display:block;font-size:13px;margin-bottom:6px}
+.logic-node span{font-size:12px;color:var(--muted);line-height:1.45}
+.priority{font-weight:800}
+
+@media(max-width:1200px){
+  .kpis{grid-template-columns:repeat(4,1fr)}
+  .kpis-4{grid-template-columns:repeat(4,1fr)}
+  .arch{grid-template-columns:1fr 1fr}.owner-grid{grid-template-columns:1fr}.target-strip{grid-template-columns:repeat(2,1fr)}.logic-flow{grid-template-columns:repeat(2,1fr)}
+  .arch-step::after{display:none}
+}
+@media(max-width:800px){
+  .main{padding:14px}
+  .kpis{grid-template-columns:repeat(2,1fr)}
+  .kpis-4{grid-template-columns:repeat(2,1fr)}
+  .row2,.row3,.case-grid{grid-template-columns:1fr}
+  .chart{height:220px}
+  .arch{grid-template-columns:1fr}.target-strip,.logic-flow{grid-template-columns:1fr}.waterfall{height:220px}
+  .header{padding:12px}
+}
+</style>
+</head>
+<body>
+<header class="header">
+  <div class="header-top">
+    <div class="brand">
+      <div class="logo">MG</div>
+      <div>
+        <h1>Система управления ростом на маркетплейсах</h1>
+        <small>Wildberries · Ozon · SKU-экономика · запасы · закупки · деньги · GMROI</small>
+      </div>
+    </div>
+
+    <div class="filters">
+      <select id="period">
+        <option>Сентябрь 2026</option>
+        <option>Август 2026</option>
+        <option>3 квартал 2026</option>
+        <option>2026 YTD</option>
+      </select>
+      <select id="weekFilter">
+        <option>Все недели</option>
+        <option>Неделя 1</option>
+        <option>Неделя 2</option>
+        <option>Неделя 3</option>
+        <option>Неделя 4</option>
+      </select>
+      <select id="scope">
+        <option>WB + Ozon</option>
+        <option>Wildberries</option>
+        <option>Ozon</option>
+      </select>
+      <select id="category">
+        <option>Женское термобельё</option>
+        <option>Термолеггинсы</option>
+        <option>Термолонгсливы</option>
+        <option>Комплекты</option>
+      </select>
+      <select id="collection">
+        <option>Все коллекции</option>
+        <option>Core</option>
+        <option>Winter 2026</option>
+        <option>New Drops</option>
+      </select>
+      <span class="demo-badge" id="badge">DEMO · синтетические данные</span>
+    </div>
+  </div>
+
+  <nav class="nav">
+    <button class="active" data-tab="overview">Панель руководителя</button>
+    <button data-tab="sales">Продажи WB / Ozon</button>
+    <button data-tab="inventory">SKU, ABC и GMROI</button>
+    <button data-tab="procurement">Закупки и запасы</button>
+    <button data-tab="cash">Деньги</button>
+    <button data-tab="quality">Контроль данных</button>
+    <button data-tab="architecture">Архитектура кейса</button>
+  </nav>
+</header>
+
+<main class="main">
+  <section id="overview" class="tab active">
+    <div class="case-box" style="margin-bottom:14px">
+      <h2>Управленческий контур для лидера категории</h2>
+      <p>2025: <b style="color:var(--text)">450 млн ₽</b> · цель 2026: <b style="color:var(--text)">1,5 млрд ₽</b>.</p>
+      
+    </div>
+
+    <div class="target-strip" style="margin-bottom:14px">
+      <div class="target-step"><div class="k">Факт 2025</div><div class="v">450 млн ₽</div><div class="soft">база</div></div>
+      <div class="target-step"><div class="k">Цель 2026</div><div class="v">1,5 млрд ₽</div><div class="soft">x3,3 к 2025</div></div>
+      <div class="target-step"><div class="k">Текущий run-rate</div><div class="v" data-bind="targetRunRate"></div><div class="soft" data-bind="targetRunRateComment"></div></div>
+      <div class="target-step"><div class="k">Разрыв до цели</div><div class="v" data-bind="targetGap"></div><div class="soft">что еще нужно добрать</div></div>
+    </div>
+
+    <div class="grid kpis">
+      <div class="card kpi"><div class="label">GMV за период</div><div class="value" data-bind="gmv"></div><div class="delta good" data-bind="runrate"></div></div>
+      <div class="card kpi"><div class="label">GMV / мес.</div><div class="value" data-bind="monthlyGmv"></div><div class="delta good" data-bind="momGrowth"></div></div>
+      <div class="card kpi"><div class="label">Доля WB</div><div class="value" data-bind="wbShare"></div><div class="delta" data-bind="wbValue"></div></div>
+      <div class="card kpi"><div class="label">Доля Ozon</div><div class="value" data-bind="ozonShare"></div><div class="delta" data-bind="ozonValue"></div></div>
+      <div class="card kpi"><div class="label">Вклад после MP-costs</div><div class="value" data-bind="cm"></div><div class="delta good" data-bind="cmDelta"></div></div>
+      <div class="card kpi"><div class="label">GMROI</div><div class="value" data-bind="gmroi"></div><div class="delta good" data-bind="gmroiDelta"></div></div>
+      <div class="card kpi"><div class="label">Stock cover</div><div class="value" data-bind="stockCover"></div><div class="delta" data-bind="stockComment"></div></div>
+      <div class="card kpi"><div class="label">Рост vs категория</div><div class="value" data-bind="growthVsCategory"></div><div class="delta good" data-bind="growthComment"></div></div>
+    </div>
+
+    <div class="grid row2">
+      <div class="card">
+        <div class="section-title"><h2>Декомпозиция роста к цели 1,5 млрд ₽</h2><span>драйверы GMV</span></div>
+        <div class="waterfall" id="targetWaterfall"></div>
+      </div>
+      <div class="card">
+        <div class="section-title"><h2>Три решения на сегодня</h2><span>приоритет руководителя</span></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Приоритет</th><th>Действие</th><th>Почему</th><th>Ожидаемый эффект</th></tr></thead>
+            <tbody id="ownerDecisionBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid row2">
+      <div class="card">
+        <div class="section-title"><h2>GMV по неделям</h2><span id="overviewChartSubtitle">WB + Ozon · факт против плана</span></div>
+        <div class="legend"><span><i class="dot"></i>GMV</span><span data-bind="runrate2"></span></div>
+        <div class="chart" id="revenueChart"></div>
+      </div>
+      <div class="card">
+        <div class="section-title"><h2>Решения руководителю на сегодня</h2><span>5 приоритетов</span></div>
+        <div id="signals"></div>
+      </div>
+    </div>
+
+    <div class="grid row3">
+      <div class="card">
+        <div class="section-title"><h2>GMROI по товарным группам</h2><span id="groupTitleNote">contribution profit / средний запас</span></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Группа</th><th>GMV</th><th>CM%</th><th>Запас</th><th>GMROI</th><th>Решение</th></tr></thead>
+            <tbody id="groupTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card">
+        <div class="section-title"><h2>Капитал в запасах</h2><span>структура</span></div>
+        <div class="metric-list">
+          <div class="metric-line"><span>Core stock</span><b data-bind="coreStock"></b></div>
+          <div class="metric-line"><span>Избыточный запас</span><b class="warn" data-bind="overstock"></b></div>
+          <div class="metric-line"><span>Slow movers / dead stock</span><b class="bad" data-bind="slow"></b></div>
+          <div class="metric-line"><span>Потенциал cash release</span><b class="good" data-bind="cashRelease"></b></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="section-title"><h2>Качество управленческого контура</h2><span>контроль</span></div>
+        <div class="metric-list">
+          <div class="metric-line"><span>Сверка заказов / GMV</span><b class="good" data-bind="qualityOrders"></b></div>
+          <div class="metric-line"><span>Сверка выплат MP / банков</span><b class="good" data-bind="qualityPayouts"></b></div>
+          <div class="metric-line"><span>SKU без себестоимости</span><b class="warn" data-bind="skuNoCost"></b></div>
+          <div class="metric-line"><span>Неопознанные удержания MP</span><b class="bad" data-bind="unidentified"></b></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+<section id="sales" class="tab">
+    <div class="grid kpis">
+      <div class="card kpi"><div class="label">GMV WB</div><div class="value" data-bind="salesWb"></div><div class="delta good" data-bind="salesWbDelta"></div></div>
+      <div class="card kpi"><div class="label">GMV Ozon</div><div class="value" data-bind="salesOzon"></div><div class="delta good" data-bind="salesOzonDelta"></div></div>
+      <div class="card kpi"><div class="label">Заказы</div><div class="value" data-bind="orders"></div><div class="delta good" data-bind="ordersDelta"></div></div>
+      <div class="card kpi"><div class="label">Средняя цена</div><div class="value" data-bind="avgPrice"></div><div class="delta good" data-bind="avgPriceDelta"></div></div>
+      <div class="card kpi"><div class="label">Выкуп</div><div class="value" data-bind="buyout"></div><div class="delta good" data-bind="buyoutDelta"></div></div>
+      <div class="card kpi"><div class="label">Реклама / GMV</div><div class="value" data-bind="adsToGmv"></div><div class="delta" data-bind="adsDelta"></div></div>
+      <div class="card kpi"><div class="label">Комиссии + логистика</div><div class="value" data-bind="fees"></div><div class="delta warn" data-bind="feesDelta"></div></div>
+      <div class="card kpi"><div class="label">Contribution margin</div><div class="value" data-bind="salesCm"></div><div class="delta good" data-bind="salesCmDelta"></div></div>
+    </div>
+
+    <div class="grid row2">
+      <div class="card">
+        <div class="section-title"><h2>GMV по площадкам</h2><span>млн ₽</span></div>
+        <div class="chart" id="salesChart"></div>
+      </div>
+      <div class="card">
+        <div class="section-title"><h2>Экономика заказа</h2><span>средний выкупленный заказ</span></div>
+        <div class="metric-list">
+          <div class="metric-line"><span>Цена продажи</span><b data-bind="uePrice"></b></div>
+          <div class="metric-line"><span>Себестоимость</span><b data-bind="ueCogs"></b></div>
+          <div class="metric-line"><span>Комиссия MP</span><b data-bind="ueCommission"></b></div>
+          <div class="metric-line"><span>Логистика / хранение</span><b data-bind="ueLogistics"></b></div>
+          <div class="metric-line"><span>Реклама</span><b data-bind="ueAds"></b></div>
+          <div class="metric-line"><span>Contribution profit</span><b class="good" data-bind="ueProfit"></b></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:14px">
+      <div class="section-title"><h2>Рост против категории</h2><span>главный принцип — расти быстрее рынка</span></div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Площадка</th><th>Рост категории</th><th>Наш рост</th><th>Delta</th><th>Интерпретация</th></tr></thead>
+          <tbody id="growthTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section id="inventory" class="tab">
+    <div class="grid row2">
+      <div class="card">
+        <div class="section-title"><h2>SKU action matrix</h2><span>CM × скорость продаж × stock cover</span></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>SKU</th><th>Площадка</th><th>CM%</th><th>Дни запаса</th><th>GMROI</th><th>Решение</th></tr></thead>
+            <tbody id="skuTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card">
+        <div class="section-title"><h2>Состояние запасов</h2><span>цель: 30–35 дней</span></div>
+        <div class="metric-list" id="stockHealthList"></div>
+      </div>
+    </div>
+
+    <div class="grid row3">
+      <div class="card"><div class="section-title"><h2>Риск отсутствия товара</h2><span>14 дней</span></div><div class="metric-list"><div class="metric-line"><span>SKU под риском</span><b class="bad" data-bind="oosSku"></b></div><div class="metric-line"><span>Потенциальный lost GMV</span><b data-bind="oosLost"></b></div></div></div>
+      <div class="card"><div class="section-title"><h2>Избыточный запас</h2><span>&gt;60 дней</span></div><div class="metric-list"><div class="metric-line"><span>SKU</span><b class="warn" data-bind="overstockSku"></b></div><div class="metric-line"><span>Заморожено</span><b data-bind="overstockFrozen"></b></div></div></div>
+      <div class="card"><div class="section-title"><h2>Высвобождение денег</h2><span>без риска core OOS</span></div><div class="metric-list"><div class="metric-line"><span>Потенциал</span><b class="good" data-bind="cashRelease2"></b></div><div class="metric-line"><span>Горизонт</span><b data-bind="cashReleaseHorizon"></b></div></div></div>
+    </div>
+
+    <div class="grid row2" style="margin-top:14px">
+      <div class="card">
+        <div class="section-title"><h2>ABC-анализ</h2><span>вклад в оборот и прибыль</span></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Класс</th><th>SKU</th><th>Доля GMV</th><th>CM%</th><th>GMROI</th><th>Управленческий фокус</th></tr></thead>
+            <tbody id="abcTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card">
+        <div class="section-title"><h2>Автоматические решения по SKU</h2><span>что делать прямо сейчас</span></div>
+        <div style="margin-bottom:8px"><b class="soft">Высокий приоритет</b></div>
+        <div id="highPriority"></div>
+        <div style="margin:10px 0 8px"><b class="soft">Средний приоритет</b></div>
+        <div id="mediumPriority"></div>
+        <div style="margin:10px 0 8px"><b class="soft">Наблюдение</b></div>
+        <div id="watchPriority"></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="procurement" class="tab">
+    <div class="grid kpis kpis-4">
+      <div class="card kpi"><div class="label">PO открытые</div><div class="value" data-bind="poOpen"></div><div class="delta" data-bind="poComment"></div></div>
+      <div class="card kpi"><div class="label">Товар в пути</div><div class="value" data-bind="inTransit"></div><div class="delta" data-bind="transitComment"></div></div>
+      <div class="card kpi"><div class="label">Риск отсутствия товара 14d</div><div class="value" data-bind="oosProc"></div><div class="delta bad">требуется действие</div></div>
+      <div class="card kpi"><div class="label">Можно отменить / перенести</div><div class="value" data-bind="canShift"></div><div class="delta good">без потери продаж</div></div>
+    </div>
+
+    <div class="card" style="margin-top:14px">
+      <div class="section-title"><h2>Рекомендованный закупочный цикл</h2><span>спрос + lead time + остаток + GMROI</span></div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Группа</th><th>Продажи/день</th><th>Stock</th><th>В пути</th><th>Lead time</th><th>Рекомендация</th></tr></thead>
+          <tbody id="procTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:14px">
+      <div class="section-title"><h2>Логика рекомендаций системы</h2><span>правила принятия решений</span></div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Сигнал</th><th>Условие</th><th>Действие системы</th><th>Финансовый смысл</th></tr></thead>
+          <tbody>
+            <tr><td>OOS risk</td><td>stock cover &lt; lead time + safety stock</td><td>создать срочную рекомендацию на поставку</td><td>не потерять GMV</td></tr>
+            <tr><td>Slow mover</td><td>stock cover &gt; 60 дней и GMROI ниже порога</td><td>stop buy + markdown</td><td>высвободить cash</td></tr>
+            <tr><td>Реклама</td><td>ACoS выше лимита и CM падает</td><td>снизить ставки / выключить кампанию</td><td>защитить contribution profit</td></tr>
+            <tr><td>SKU-победитель</td><td>рост выше категории + высокий GMROI</td><td>увеличить закупку и рекламный лимит</td><td>забирать долю рынка</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section id="cash" class="tab">
+    <div class="grid row2">
+      <div class="card">
+        <div class="section-title"><h2>13-недельный прогноз движения денег</h2><span id="cashSubtitle">остаток на конец недели</span></div>
+        <div class="chart" id="cashChart"></div>
+      </div>
+      <div class="card">
+        <div class="section-title"><h2>Денежные риски</h2><span>на 30 дней</span></div>
+        <div class="metric-list">
+          <div class="metric-line"><span>Минимальный остаток</span><b data-bind="minCash"></b></div>
+          <div class="metric-line"><span>Порог безопасности</span><b data-bind="safetyCash"></b></div>
+          <div class="metric-line"><span>Макс. неделя выплат поставщикам</span><b data-bind="maxSupplierWeek"></b></div>
+          <div class="metric-line"><span>Cash gap</span><b class="good" data-bind="cashGap"></b></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid row2" style="margin-top:14px">
+      <div class="card">
+        <div class="section-title"><h2>Приход · расход · чистый денежный поток</h2><span>водопад</span></div>
+        <div class="waterfall" id="cashWaterfall"></div>
+      </div>
+      <div class="card">
+        <div class="section-title"><h2>Аналитика денежного потока</h2><span>по основным статьям</span></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Статья</th><th>Сумма</th><th>Тип</th></tr></thead>
+            <tbody id="cashBreakdownBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="quality" class="tab">
+    <div class="case-box">
+      <h2>Контроль достоверности</h2>
+      <p>Цель системы — связать кабинеты Wildberries и Ozon, заказы, возвраты, рекламу, комиссии, логистику, себестоимость, остатки и банковские выплаты в одну проверяемую модель. Ниже — ключевые автоматические контроли.</p>
+      <div class="case-grid">
+        <div class="case-point"><b>WB/Ozon выплаты ↔ банк</b><span>Остаток и поступления по управленческой системе должны совпадать с банковскими счетами.</span></div>
+        <div class="case-point"><b>Заказы ↔ отчёты реализации</b><span>Заказ, возврат, комиссия и фактическая выплата связываются в единую цепочку.</span></div>
+        <div class="case-point"><b>Продажи ↔ остатки FBO/FBS</b><span>Реализация и возвраты должны корректно изменять количественный и стоимостной остаток.</span></div>
+        <div class="case-point"><b>SKU ↔ себестоимость</b><span>Система блокирует GMROI и маржинальность для SKU без валидной себестоимости.</span></div>
+        <div class="case-point"><b>PO ↔ поставки ↔ оплаты</b><span>План закупок связывается с графиком обязательств и cash forecast.</span></div>
+        <div class="case-point"><b>SKU master data</b><span>Единые справочники SKU, коллекций, площадок, складов и поставщиков.</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="architecture" class="tab">
+    <div class="case-box">
+      <h2>Архитектура кейса</h2>
+      <p>Этот прототип показывает внутреннюю операционную систему marketplace-бизнеса: от кабинетов Wildberries и Ozon до решения по конкретному SKU, закупке, рекламе и денежному потоку.</p>
+    </div>
+
+    <div class="arch" style="margin-top:16px">
+      <div class="arch-step"><h3>1. Источники</h3><p>API Wildberries/Ozon, 1С/ERP, банки, рекламные кабинеты, таблицы, данные поставщиков.</p></div>
+      <div class="arch-step"><h3>2. Слой данных</h3><p>Загрузка, нормализация, единые идентификаторы, справочники и контроль дублей.</p></div>
+      <div class="arch-step"><h3>3. Бизнес-логика</h3><p>GMV, выкуп, возвраты, комиссии, логистика, реклама, COGS, CM, GMROI, stock cover и cash forecast.</p></div>
+      <div class="arch-step"><h3>4. Контроли</h3><p>Автоматические сверки, исключения, контроль полноты и качества данных.</p></div>
+      <div class="arch-step"><h3>5. Решения</h3><p>Список действий по SKU, рекламные лимиты, поставки на склады MP, PO, cash release и weekly trading decisions.</p></div>
+    </div>
+
+    <div class="case-grid" style="margin-top:16px">
+      <div class="case-point"><b>Роль в проекте</b><span>Архитектура управленческой модели, постановка требований, KPI, логика расчётов, приёмка разработки.</span></div>
+      <div class="case-point"><b>Что должен увидеть собственник</b><span>Какие SKU растут быстрее рынка, где теряется маржа, где будет OOS, что закупать, что останавливать и сколько cash можно высвободить.</span></div>
+      <div class="case-point"><b>Что получает команда</b><span>Один источник правды по WB и Ozon, единые SKU-справочники и прозрачную экономику от заказа до денег на счёте.</span></div>
+    </div>
+
+    <p class="footer-note">Важно: цифры в прототипе синтетические и используются только для демонстрации архитектуры, интерфейса и управленческой логики.</p>
+  </section>
+</main>
+
+<script>
+const tabs = document.querySelectorAll('.nav button');
+tabs.forEach(btn=>btn.addEventListener('click',()=>{
+  tabs.forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById(btn.dataset.tab).classList.add('active');
+}));
+
+function fmtMoney(n, digits=1){
+  return `${n.toFixed(digits).replace('.', ',')} млн\u00A0₽`;
+}
+function fmtRub(n){
+  return `${Math.round(n).toLocaleString('ru-RU')}\u00A0₽`;
+}
+function fmtPct(n, digits=1){
+  return `${n.toFixed(digits).replace('.', ',')}%`;
+}
+function fmtPp(n){
+  const sign = n > 0 ? '+' : '';
+  return `${sign}${n.toFixed(1).replace('.', ',')} п.п.`;
+}
+function fmtNum(n){
+  return Math.round(n).toLocaleString('ru-RU');
+}
+function fmtRatio(n){
+  return n.toFixed(2).replace('.', ',');
+}
+
+const periodData = {
+  'Сентябрь 2026': {gmv:142.7, monthly:142.7, wbShare:0.64, cm:24.8, gmroi:0.91, stock:33, growthVs:23, weekly:[31.8,34.6,36.9,39.4], cash:[31.4,28.8,26.1,23.7,22.9,27.5,30.8,35.2], orders:63840, avgPrice:2236, buyout:71.8, ads:8.6, fees:24.1, growthMoM:18.9},
+  'Август 2026':   {gmv:120.0, monthly:120.0, wbShare:0.65, cm:22.7, gmroi:0.79, stock:36, growthVs:17, weekly:[27.0,29.1,30.3,33.6], cash:[28.6,25.4,22.9,20.1,18.8,23.4,26.9,30.5], orders:55120, avgPrice:2178, buyout:69.9, ads:9.3, fees:24.8, growthMoM:9.6},
+  '3 квартал 2026':{gmv:392.0, monthly:130.7, wbShare:0.64, cm:23.8, gmroi:0.84, stock:35, growthVs:20, weekly:[90,96,102,104], cash:[34,31,28,25,24,27,31,36], orders:174300, avgPrice:2249, buyout:70.9, ads:8.9, fees:24.4, growthMoM:15.1},
+  '2026 YTD':      {gmv:986.0, monthly:123.3, wbShare:0.64, cm:23.4, gmroi:0.82, stock:34, growthVs:19, weekly:[228,239,250,269], cash:[36,34,31,29,28,30,33,38], orders:439800, avgPrice:2242, buyout:70.8, ads:8.8, fees:24.5, growthMoM:14.0},
+};
+
+const scopeFactors = {
+  'WB + Ozon': {scale:1, wbMul:1, ozMul:1, ads:1, fee:1, gmroi:1, stock:1, orders:1, name:'WB + Ozon'},
+  'Wildberries': {scale:0.64, wbMul:1.04, ozMul:0, ads:0.95, fee:0.98, gmroi:1.06, stock:0.92, orders:0.67, name:'Wildberries'},
+  'Ozon': {scale:0.36, wbMul:0, ozMul:1.05, ads:1.08, fee:1.04, gmroi:0.91, stock:1.08, orders:0.33, name:'Ozon'},
+};
+
+const categoryFactors = {
+  'Женское термобельё': {scale:1, cm:1, gmroi:1, stock:1, avgPrice:1},
+  'Термолеггинсы': {scale:0.41, cm:1.08, gmroi:1.12, stock:0.95, avgPrice:0.92},
+  'Термолонгсливы': {scale:0.34, cm:0.98, gmroi:0.97, stock:1.00, avgPrice:1.02},
+  'Комплекты': {scale:0.25, cm:0.90, gmroi:0.82, stock:1.12, avgPrice:1.18},
+};
+
+const collectionFactors = {
+  'Все коллекции': {scale:1, cm:1, gmroi:1, stock:1, ads:1},
+  'Core': {scale:0.58, cm:1.04, gmroi:1.08, stock:0.94, ads:0.96},
+  'Winter 2026': {scale:0.29, cm:0.98, gmroi:0.96, stock:1.07, ads:1.03},
+  'New Drops': {scale:0.13, cm:0.92, gmroi:0.84, stock:0.74, ads:1.18},
+};
+
+function buildState(){
+  const period = document.getElementById('period').value;
+  const week = document.getElementById('weekFilter').value;
+  const scope = document.getElementById('scope').value;
+  const category = document.getElementById('category').value;
+  const collection = document.getElementById('collection').value;
+
+  const base = periodData[period];
+  const sf = scopeFactors[scope];
+  const cf = categoryFactors[category];
+  const lf = collectionFactors[collection];
+
+  const baseScale = sf.scale * cf.scale * lf.scale;
+  const rawWeekTotal = base.weekly.reduce((a,b)=>a+b,0);
+  let weekScale = 1;
+  let weekIndex = null;
+  let weeklySeries = base.weekly.map(v => v * baseScale);
+
+  if (week !== 'Все недели'){
+    weekIndex = Number(week.replace(/\D/g,'')) - 1;
+    weekScale = base.weekly[weekIndex] / rawWeekTotal;
+    weeklySeries = [base.weekly[weekIndex] * baseScale];
+  }
+
+  const periodScale = baseScale * weekScale;
+  const gmv = base.gmv * periodScale;
+  const monthly = week === 'Все недели'
+    ? base.monthly * baseScale
+    : (base.gmv * weekScale * baseScale * 4);
+  const wbShare = scope === 'Ozon' ? 0 : (scope === 'Wildberries' ? 1 : base.wbShare);
+  const ozonShare = 1 - wbShare;
+  const wbValue = gmv * wbShare * (sf.wbMul || 1);
+  const ozonValue = gmv * ozonShare * (sf.ozMul || 1);
+  const cm = base.cm * cf.cm * lf.cm;
+  const gmroi = base.gmroi * sf.gmroi * cf.gmroi * lf.gmroi;
+  const stock = base.stock * sf.stock * cf.stock * lf.stock;
+  const orders = base.orders * sf.orders * cf.scale * lf.scale * weekScale;
+  const avgPrice = base.avgPrice * cf.avgPrice;
+  const buyout = Math.min(79, Math.max(61, base.buyout + (scope === 'Wildberries' ? 1.2 : scope === 'Ozon' ? -1.0 : 0) + (collection === 'Core' ? 1.1 : collection === 'New Drops' ? -2.0 : 0)));
+  const ads = base.ads * sf.ads * lf.ads;
+  const fees = base.fees * sf.fee * (collection === 'New Drops' ? 1.05 : 1);
+  const cash = base.cash.map(v => v * Math.max(0.25, baseScale) + (gmroi-0.8)*2.5);
+  const growthVs = Math.max(5, base.growthVs + (scope === 'Wildberries' ? 1 : 0) + (category === 'Термолеггинсы' ? 2 : category === 'Комплекты' ? -4 : 0) + (collection === 'New Drops' ? -3 : collection === 'Core' ? 1 : 0));
+
+  return {
+    period, week, weekIndex, scope, category, collection,
+    gmv, monthly, wbShare, ozonShare, wbValue, ozonValue,
+    cm, gmroi, stock, growthVs, weekly: weeklySeries, cash, orders, avgPrice, buyout, ads, fees
+  };
+}
+
+function bars(id, labels, vals){
+  const el = document.getElementById(id);
+  const max = Math.max(...vals) * 1.08;
+  el.innerHTML = '';
+  vals.forEach((v,i)=>{
+    const w = document.createElement('div');
+    w.className='bar-wrap';
+    w.innerHTML = `<div class="bar" style="height:${Math.max(8,(v/max)*100)}%" title="${labels[i]}: ${v.toFixed(1)}"></div><div class="bar-label">${labels[i]}</div>`;
+    el.appendChild(w);
+  });
+}
+
+function bindText(key, value){
+  document.querySelectorAll(`[data-bind="${key}"]`).forEach(el=>el.textContent=value);
+}
+
+function pill(text, cls){
+  return `<span class="pill ${cls}">${text}</span>`;
+}
+
+function renderSignals(s){
+  const lost = s.gmv * 0.048;
+  const acosMsg = s.ads > 9 ? 'ACoS выше цели по 11 SKU' : 'ACoS в пределах цели по core SKU';
+  const acosText = s.ads > 9
+    ? 'Реклама съедает contribution margin. Требуется пересборка ставок и отключение низкоэффективных кампаний.'
+    : 'Можно безопасно расширять охват на лучших SKU без потери contribution margin.';
+  document.getElementById('signals').innerHTML = `
+    <div class="signal"><div class="icon">↑</div><div><b>14 SKU растут быстрее категории</b><p>Рекомендуется увеличить лимит закупки на 18% и поднять рекламный cap на товарах-победителях.</p></div></div>
+    <div class="signal"><div class="icon">!</div><div><b>${Math.max(4, Math.round(9*s.weekly[0]/periodData[s.period].weekly[0]))} SKU рискуют уйти в OOS</b><p>Потенциально недополученный GMV: ${fmtMoney(lost)}. Нужна ускоренная поставка и перераспределение между складами.</p></div></div>
+    <div class="signal"><div class="icon">↘</div><div><b>${acosMsg}</b><p>${acosText}</p></div></div>
+    <div class="signal"><div class="icon">₽</div><div><b>${fmtMoney(s.gmv*0.052)} можно высвободить из slow movers</b><p>Без риска OOS по core-ассортименту. Приоритет — распродажа и заморозка повторных закупок.</p></div></div>
+  `;
+}
+
+function renderGroupTable(s){
+  const groups = [
+    {name:'Термолеггинсы', share:0.41, cmAdj:1.08, stockAdj:0.95, gmroiAdj:1.12, decision:'масштабировать', cls:'good'},
+    {name:'Термолонгсливы', share:0.34, cmAdj:0.98, stockAdj:1.00, gmroiAdj:0.97, decision:'норма', cls:'good'},
+    {name:'Комплекты', share:0.25, cmAdj:0.90, stockAdj:1.12, gmroiAdj:0.82, decision:'пересмотреть', cls:'warn'}
+  ];
+  document.getElementById('groupTableBody').innerHTML = groups.map(g=>{
+    const gmv = s.gmv * g.share;
+    const cm = s.cm * g.cmAdj;
+    const stock = s.gmv*0.12*g.stockAdj;
+    const gmroi = s.gmroi * g.gmroiAdj;
+    return `<tr><td>${g.name}</td><td>${fmtMoney(gmv)}</td><td>${fmtPct(cm)}</td><td>${fmtMoney(stock)}</td><td>${fmtRatio(gmroi)}</td><td>${pill(g.decision, g.cls)}</td></tr>`;
+  }).join('');
+}
+
+function renderGrowthTable(s){
+  const catWb = s.scope === 'Ozon' ? null : (-4 + (s.category === 'Комплекты' ? -1 : 0) + (s.collection === 'Core' ? 1 : 0));
+  const ourWb = s.scope === 'Ozon' ? null : (catWb + s.growthVs);
+  const catOz = s.scope === 'Wildberries' ? null : (9 + (s.category === 'Комплекты' ? -1 : 0));
+  const ourOz = s.scope === 'Wildberries' ? null : (catOz + (s.growthVs-1));
+  let rows = '';
+  if(catWb !== null){
+    rows += `<tr><td>Wildberries</td><td>${fmtPct(catWb,0)}</td><td>${fmtPct(ourWb,0)}</td><td class="good">+${Math.round(ourWb-catWb)} п.п.</td><td>${catWb < 0 ? 'забираем долю на падающем рынке' : 'растём быстрее категории'}</td></tr>`;
+  }
+  if(catOz !== null){
+    rows += `<tr><td>Ozon</td><td>${fmtPct(catOz,0)}</td><td>${fmtPct(ourOz,0)}</td><td class="good">+${Math.round(ourOz-catOz)} п.п.</td><td>${ourOz-catOz > 15 ? 'растём быстрее категории' : 'опережаем рынок'}</td></tr>`;
+  }
+  document.getElementById('growthTableBody').innerHTML = rows;
+}
+
+function renderSkuTable(s){
+  const prefix = s.category === 'Комплекты' ? 'SET' : s.category === 'Термолонгсливы' ? 'LONG' : 'THERMO';
+  const rows = [
+    {sku:`${prefix}-1048`, p:s.scope==='Ozon'?'Ozon':'WB', cm:s.cm+6, days:Math.max(12, s.stock-12), gm:s.gmroi+0.58, d:'масштабировать', c:'good'},
+    {sku:`${prefix}-2201`, p:s.scope==='Ozon'?'Ozon':'WB', cm:s.cm+2, days:Math.max(9, s.stock-18), gm:s.gmroi+0.41, d:'ускорить поставку', c:'good'},
+    {sku:`${prefix}-3184`, p:s.scope==='Wildberries'?'WB':'Ozon', cm:Math.max(10,s.cm-9), days:s.stock+48, gm:Math.max(0.18,s.gmroi-0.62), d:'stop buy / sale', c:'bad'},
+    {sku:`${prefix}-4420`, p:s.scope==='Wildberries'?'WB':'Ozon', cm:s.cm+4, days:Math.max(16, s.stock-7), gm:s.gmroi+0.36, d:'поднять рекламу', c:'good'},
+    {sku:`${prefix}-5517`, p:'WB', cm:Math.max(12,s.cm-5), days:s.stock+14, gm:Math.max(0.22,s.gmroi-0.31), d:'снизить закупку', c:'warn'},
+  ];
+  document.getElementById('skuTableBody').innerHTML = rows.map(r=>`<tr><td>${r.sku}</td><td>${r.p}</td><td>${fmtPct(r.cm)}</td><td>${Math.round(r.days)}</td><td>${fmtRatio(r.gm)}</td><td>${pill(r.d,r.c)}</td></tr>`).join('');
+}
+
+function renderStockHealth(s){
+  const items = [
+    {name:'Core', days:Math.round(Math.max(16,s.stock-4))},
+    {name:'Winter 2026', days:Math.round(s.stock+1)},
+    {name:'New Drops', days:Math.round(Math.max(12,s.stock-11))},
+    {name:'Slow movers', days:Math.round(s.stock+48)},
+  ];
+  document.getElementById('stockHealthList').innerHTML = items.map(it=>{
+    const cls = it.days > 60 ? 'bad' : it.days < 24 ? 'warn' : '';
+    const width = Math.min(96, Math.max(20, it.days/90*100));
+    return `<div><div class="metric-line"><span>${it.name}</span><b class="${cls}">${it.days} дней</b></div><div class="progress"><span style="width:${width}%"></span></div></div>`;
+  }).join('');
+}
+
+function renderProcTable(s){
+  const rows = [
+    {name:'Core leggings', sales:s.gmv*0.0148, stock:Math.max(18,s.stock-7), transit:Math.max(6,s.stock-24), lead:24, rec:'дозаказать +18%', cls:'good'},
+    {name:'Longsleeves', sales:s.gmv*0.0105, stock:Math.max(21,s.stock), transit:12, lead:28, rec:'по плану', cls:'good'},
+    {name:'Sets', sales:s.gmv*0.007, stock:s.stock+17, transit:18, lead:30, rec:'перенести PO', cls:'warn'},
+    {name:'Slow movers', sales:s.gmv*0.0012, stock:s.stock+48, transit:0, lead:'—', rec:'stop buy', cls:'bad'},
+  ];
+  document.getElementById('procTableBody').innerHTML = rows.map(r=>`<tr><td>${r.name}</td><td>${fmtMoney(r.sales)}</td><td>${Math.round(r.stock)} дней</td><td>${typeof r.transit === 'number' ? r.transit + ' дней' : r.transit}</td><td>${r.lead} дней</td><td>${pill(r.rec,r.cls)}</td></tr>`).join('');
+}
+
+
+function renderTargetWaterfall(s){
+  const runRate = s.week === 'Все недели' ? s.monthly*12 : s.gmv*52;
+  const gap = Math.max(0, 1500-runRate);
+  const blocks = [
+    {label:'Run-rate', value:runRate, alt:false},
+    {label:'Новые SKU', value:gap*0.34, alt:true},
+    {label:'Рост sell-through', value:gap*0.28, alt:true},
+    {label:'Снижение OOS', value:gap*0.20, alt:true},
+    {label:'Эффект рекламы', value:gap*0.18, alt:true},
+  ];
+  const max = Math.max(...blocks.map(x=>x.value),1);
+  document.getElementById('targetWaterfall').innerHTML = blocks.map(b=>`
+    <div class="wf-col">
+      <div class="wf-bar ${b.alt?'alt':''}" style="height:${Math.max(12,b.value/max*100)}%"></div>
+      <div class="wf-label">${b.label}<br><b>${fmtMoney(b.value)}</b></div>
+    </div>`).join('');
+}
+
+function renderOwnerDecisions(s){
+  const oosEffect = s.gmv*0.048;
+  const release = s.gmv*0.052;
+  const adsSave = s.gmv*Math.max(0, (s.ads-8.2))/100;
+  const rows = [
+    ['1','Ускорить поставку SKU с риском OOS','потеря продаж в ближайшие 14 дней',fmtMoney(oosEffect)],
+    ['2','Остановить закупку slow movers','избыточный stock cover и низкий GMROI',fmtMoney(release)],
+    ['3','Пересобрать рекламные кампании','ACoS выше целевого уровня по части SKU',adsSave>0.1?fmtMoney(adsSave):'защита CM']
+  ];
+  document.getElementById('ownerDecisionBody').innerHTML = rows.map(r=>`<tr><td class="priority">${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td></tr>`).join('');
+}
+
+function renderDecisionBuckets(s){
+  const high = [
+    ['OOS',`${Math.max(4, Math.round(9*(33/Math.max(22,s.stock))))} SKU требуют ускоренной поставки`],
+    ['Cash',`${fmtMoney(s.gmv*0.052)} можно высвободить из slow movers`]
+  ];
+  if(s.ads>9) high.push(['Реклама','ACoS выше лимита по части SKU']);
+  const medium = [
+    ['Закупки','перенести PO по SKU со stock cover выше 50 дней'],
+    ['Маржа',`проверить ${s.category === 'Комплекты' ? 'комплекты' : 'SKU с низкой CM'} на комиссии и логистику`]
+  ];
+  const watch = [
+    ['Рост',`компания опережает категорию на ${Math.round(s.growthVs)} п.п.`],
+    ['Деньги','cash gap не прогнозируется при текущем плане выплат']
+  ];
+
+  const render = items => items.map(x=>`<div class="signal"><div class="icon">•</div><div><b>${x[0]}</b><p>${x[1]}</p></div></div>`).join('');
+  document.getElementById('highPriority').innerHTML = render(high);
+  document.getElementById('mediumPriority').innerHTML = render(medium);
+  document.getElementById('watchPriority').innerHTML = render(watch);
+}
+
+
+function renderAbcTable(s){
+  const rows = [
+    {cls:'A', sku:Math.max(18, Math.round(24 * (s.gmv/142.7))), share:62, cm:s.cm+2.4, gmroi:s.gmroi+0.18, focus:'масштабировать и защищать наличие'},
+    {cls:'B', sku:Math.max(24, Math.round(36 * (s.gmv/142.7))), share:26, cm:s.cm-1.2, gmroi:Math.max(0.35, s.gmroi-0.11), focus:'контроль рекламы и дозакупки'},
+    {cls:'C', sku:Math.max(30, Math.round(58 * (s.gmv/142.7))), share:12, cm:Math.max(10, s.cm-6.2), gmroi:Math.max(0.18, s.gmroi-0.43), focus:'stop buy / markdown / очистка'}
+  ];
+  const body = document.getElementById('abcTableBody');
+  if(!body) return;
+  body.innerHTML = rows.map(r => `<tr><td>${r.cls}</td><td>${r.sku}</td><td>${r.share}%</td><td>${fmtPct(r.cm)}</td><td>${fmtRatio(r.gmroi)}</td><td>${r.focus}</td></tr>`).join('');
+}
+
+function renderCashWaterfall(s){
+  const inflow = s.gmv * 0.71;
+  const supplier = s.gmv * 0.29;
+  const logistics = s.gmv * 0.11;
+  const ads = s.gmv * (s.ads/100);
+  const net = inflow - supplier - logistics - ads;
+  const blocks = [
+    {label:'Приход', value:inflow, alt:false},
+    {label:'Поставщики', value:supplier, alt:true},
+    {label:'Логистика', value:logistics, alt:true},
+    {label:'Реклама', value:ads, alt:true},
+    {label:'ЧДП', value:net, alt:false}
+  ];
+  const max = Math.max(...blocks.map(x=>x.value),1);
+  const el = document.getElementById('cashWaterfall');
+  if(!el) return;
+  el.innerHTML = blocks.map(b=>`
+    <div class="wf-col">
+      <div class="wf-bar ${b.alt?'alt':''}" style="height:${Math.max(12,b.value/max*100)}%"></div>
+      <div class="wf-label">${b.label}<br><b>${fmtMoney(b.value)}</b></div>
+    </div>`).join('');
+}
+
+function renderCashBreakdown(s){
+  const inflowWB = s.wbValue * 0.69;
+  const inflowOzon = s.ozonValue * 0.70;
+  const returnsAdj = s.gmv * 0.02;
+  const supplier = s.gmv * 0.29;
+  const logistics = s.gmv * 0.11;
+  const ads = s.gmv * (s.ads/100);
+  const net = inflowWB + inflowOzon - returnsAdj - supplier - logistics - ads;
+  const rows = [
+    ['Выплаты Wildberries', fmtMoney(inflowWB), 'приход'],
+    ['Выплаты Ozon', fmtMoney(inflowOzon), 'приход'],
+    ['Корректировки / возвраты', '−' + fmtMoney(returnsAdj), 'расход'],
+    ['Оплата поставщикам', '−' + fmtMoney(supplier), 'расход'],
+    ['Логистика и хранение', '−' + fmtMoney(logistics), 'расход'],
+    ['Реклама', '−' + fmtMoney(ads), 'расход'],
+    ['Чистый денежный поток', fmtMoney(net), 'итог']
+  ];
+  const body = document.getElementById('cashBreakdownBody');
+  if(!body) return;
+  body.innerHTML = rows.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td></tr>`).join('');
+}
+
+function updateDashboard(){
+  const s = buildState();
+
+  bindText('gmv', fmtMoney(s.gmv));
+  bindText('runrate', `run-rate: ${fmtMoney(s.monthly*12)}`);
+  bindText('monthlyGmv', fmtMoney(s.monthly));
+  bindText('momGrowth', `+${s.period === 'Август 2026' ? '9,6' : s.period === '3 квартал 2026' ? '15,1' : s.period === '2026 YTD' ? '14,0' : '18,9'}% MoM`);
+  bindText('wbShare', fmtPct(s.wbShare*100,0));
+  bindText('wbValue', fmtMoney(s.wbValue));
+  bindText('ozonShare', fmtPct(s.ozonShare*100,0));
+  bindText('ozonValue', fmtMoney(s.ozonValue));
+  bindText('cm', fmtPct(s.cm));
+  bindText('cmDelta', s.cm >= 24 ? '+2,1 п.п.' : '+1,3 п.п.');
+  bindText('gmroi', fmtRatio(s.gmroi));
+  bindText('gmroiDelta', s.gmroi >= 0.9 ? '+0,12' : '+0,06');
+  bindText('stockCover', `${Math.round(s.stock)} дня`);
+  bindText('stockComment', s.stock > 35 ? 'выше цели' : s.stock < 28 ? 'риск OOS' : 'цель 30–35');
+  bindText('growthVsCategory', `+${Math.round(s.growthVs)} п.п.`);
+  bindText('growthComment', 'растём быстрее рынка');
+  bindText('runrate2', `Run-rate: ${fmtMoney(s.monthly*12)}`);
+
+  bindText('coreStock', fmtMoney(s.gmv*0.29));
+  bindText('overstock', fmtMoney(s.gmv*0.07));
+  bindText('slow', fmtMoney(s.gmv*0.036));
+  bindText('cashRelease', fmtMoney(s.gmv*0.052));
+  bindText('qualityOrders', '99,8%');
+  bindText('qualityPayouts', '99,9%');
+  bindText('skuNoCost', fmtNum(Math.max(2, Math.round(6*(s.gmv/142.7)))));
+  bindText('unidentified', fmtMoney(s.gmv*0.0012));
+
+  bindText('salesWb', fmtMoney(s.wbValue));
+  bindText('salesWbDelta', s.scope === 'Ozon' ? '—' : '+21,4% MoM');
+  bindText('salesOzon', fmtMoney(s.ozonValue));
+  bindText('salesOzonDelta', s.scope === 'Wildberries' ? '—' : '+14,8% MoM');
+  bindText('orders', fmtNum(s.orders));
+  bindText('ordersDelta', '+16,2%');
+  bindText('avgPrice', fmtRub(s.avgPrice));
+  bindText('avgPriceDelta', '+2,3%');
+  bindText('buyout', fmtPct(s.buyout));
+  bindText('buyoutDelta', s.buyout >= 71 ? '+1,9 п.п.' : '+0,8 п.п.');
+  bindText('adsToGmv', fmtPct(s.ads));
+  bindText('adsDelta', s.ads <= 9 ? '-0,7 п.п.' : '+0,3 п.п.');
+  bindText('fees', fmtPct(s.fees));
+  bindText('feesDelta', s.fees > 25 ? 'контроль' : 'норма');
+  bindText('salesCm', fmtPct(s.cm));
+  bindText('salesCmDelta', s.cm >= 24 ? '+2,1 п.п.' : '+1,2 п.п.');
+
+  bindText('uePrice', fmtRub(s.avgPrice));
+  bindText('ueCogs', '−' + fmtRub(s.avgPrice*0.31));
+  bindText('ueCommission', '−' + fmtRub(s.avgPrice*0.15));
+  bindText('ueLogistics', '−' + fmtRub(s.avgPrice*0.09));
+  bindText('ueAds', '−' + fmtRub(s.avgPrice*(s.ads/100)));
+  bindText('ueProfit', fmtRub(s.avgPrice*(s.cm/100)));
+
+  bindText('oosSku', fmtNum(Math.max(4, Math.round(9*(33/Math.max(22,s.stock))))));
+  bindText('oosLost', fmtMoney(s.gmv*0.048));
+  bindText('overstockSku', fmtNum(Math.max(8, Math.round(24*(s.stock/33)))));
+  bindText('overstockFrozen', fmtMoney(s.gmv*0.067));
+  bindText('cashRelease2', fmtMoney(s.gmv*0.052));
+  bindText('cashReleaseHorizon', s.collection === 'New Drops' ? '45–60 дней' : '30–45 дней');
+
+  bindText('poOpen', fmtMoney(s.gmv*0.271));
+  bindText('poComment', 'в работе');
+  bindText('inTransit', fmtMoney(s.gmv*0.123));
+  bindText('transitComment', 'ожидается приемка');
+  bindText('oosProc', `${Math.max(4, Math.round(9*(33/Math.max(22,s.stock))))} SKU`);
+  bindText('canShift', fmtMoney(s.gmv*0.043));
+
+  const minCash = Math.min(...s.cash);
+  bindText('minCash', fmtMoney(minCash));
+  bindText('safetyCash', fmtMoney(Math.max(8, s.gmv*0.055)));
+  bindText('maxSupplierWeek', fmtMoney(s.gmv*0.047));
+  bindText('cashGap', minCash < s.gmv*0.055 ? 'под риском' : 'не прогнозируется');
+
+  document.getElementById('overviewChartSubtitle').textContent = `${s.scope} · ${s.category} · ${s.collection} · ${s.week}`;
+  document.getElementById('cashSubtitle').textContent = `${s.period} · ${s.week} · ${s.scope}`;
+  document.getElementById('groupTitleNote').textContent = `${s.category} · contribution profit / средний запас`;
+
+  renderSignals(s);
+  renderGroupTable(s);
+  renderGrowthTable(s);
+  renderSkuTable(s);
+  renderStockHealth(s);
+  renderProcTable(s);
+
+  const weekLabels = s.week !== 'Все недели' ? [s.week.replace('Неделя ','W')] : (s.period === '2026 YTD' ? ['Q1','Q2','Q3','Q4*'] : ['W1','W2','W3','W4']);
+  bars('revenueChart', weekLabels, s.weekly);
+  const salesLabels = s.scope === 'Wildberries' ? ['Wildberries'] : s.scope === 'Ozon' ? ['Ozon'] : ['Wildberries','Ozon'];
+  const salesVals = s.scope === 'Wildberries' ? [s.wbValue] : s.scope === 'Ozon' ? [s.ozonValue] : [s.wbValue, s.ozonValue];
+  bars('salesChart', salesLabels, salesVals);
+  bars('cashChart', ['W1','W2','W3','W4','W5','W6','W7','W8'], s.cash);
+
+
+  // Экран собственника
+  bindText('ownerScope', `${s.period} · ${s.week} · ${s.scope} · ${s.category}`);
+  bindText('ownerGmv', fmtMoney(s.gmv));
+  bindText('ownerCm', fmtPct(s.cm));
+  bindText('ownerGmroi', fmtRatio(s.gmroi));
+  bindText('ownerCash', fmtMoney(s.gmv*0.052));
+  bindText('ownerGrowthStatus', `+${Math.round(s.growthVs)} п.п. к категории`);
+  bindText('ownerStockStatus', s.stock > 35 ? `выше цели: ${Math.round(s.stock)} дней` : s.stock < 28 ? `риск OOS: ${Math.round(s.stock)} дней` : `в норме: ${Math.round(s.stock)} дня`);
+  bindText('ownerAdsStatus', s.ads > 9 ? `выше цели: ${fmtPct(s.ads)}` : `в норме: ${fmtPct(s.ads)}`);
+  bindText('ownerCashGap', Math.min(...s.cash) < s.gmv*0.055 ? 'под риском' : 'не прогнозируется');
+  bindText('ownerBest', `${s.category}: лучшие SKU показывают высокий sell-through и GMROI. Их нужно масштабировать по закупке и рекламе.`);
+  bindText('ownerLoss', s.ads > 9 ? `Основная зона потерь - реклама и логистика по низкомаржинальным SKU.` : `Основная зона потерь - low-margin SKU и избыточный запас.`);
+  bindText('ownerFrozen', `${fmtMoney(s.gmv*0.067)} заморожено в overstock; потенциально можно высвободить ${fmtMoney(s.gmv*0.052)}.`);
+  renderOwnerDecisions(s);
+
+  // Экран цели 1,5 млрд
+  const runRate = s.week === 'Все недели' ? s.monthly*12 : s.gmv*52;
+  const gap = Math.max(0, 1500-runRate);
+  bindText('targetRunRate', fmtMoney(runRate));
+  bindText('targetRunRateComment', runRate >= 1500 ? 'темп выше цели' : 'текущий темп');
+  bindText('targetGap', fmtMoney(gap));
+  bindText('targetSku', `${Math.round(220 + s.growthVs*2)} SKU`);
+  bindText('targetSalesSku', fmtMoney((1500/12)/(220+s.growthVs*2),2));
+  bindText('targetOos', `${Math.max(2, Math.round(8 - s.growthVs/5))}%`);
+  bindText('targetAds', `${Math.max(7.5, Math.min(9.5, s.ads)).toFixed(1).replace('.',',')}%`);
+  bindText('targetStock', '30–35 дней');
+  renderTargetWaterfall(s);
+
+  // Автоматические решения
+  renderDecisionBuckets(s);
+  renderAbcTable(s);
+  renderCashWaterfall(s);
+  renderCashBreakdown(s);
+
+  const badge = document.getElementById('badge');
+  badge.textContent = `DEMO · ${s.period} · ${s.week} · ${s.scope} · ${s.category}`;
+  badge.style.borderColor = '#80522e';
+}
+
+document.querySelectorAll('select').forEach(s=>s.addEventListener('change', updateDashboard));
+updateDashboard();
+</script>
+</body>
+</html>
